@@ -1,0 +1,6 @@
+# local operational data (created at runtime by the extension)
+~/.pi/agent/agentic-compound-engineering/runs/
+*.tmp
+*.quarantined-*
+node_modules/
+.DS_Store
