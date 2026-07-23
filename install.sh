@@ -88,6 +88,7 @@ if [ "$ok" -ne 1 ]; then
   exit 1
 fi
 chmod +x "$STAGE/scripts/pr-snapshot"
+mkdir -p "$(dirname "$DEST")"   # ensure ~/.pi/agent/skills/ exists before the move
 rm -rf "${DEST}.old.$$"
 [ -d "$DEST" ] && mv "$DEST" "${DEST}.old.$$"
 mv "$STAGE" "$DEST"
