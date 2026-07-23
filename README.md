@@ -20,8 +20,10 @@ flowchart TD
     Verifying -->|reject| Implementing
     Verifying -->|all units approved| Simplifying[Simplifying<br/>simplifier child + targeted re-verify]
     Simplifying --> CodeReview[CodeReview<br/>code-reviewer child]
+    CodeReview -->|required fixes need re-simplify| Simplifying
     CodeReview -->|clear + required fixes applied| Shipping[Shipping<br/>main agent: /ce-commit-push-pr]
     Shipping -->|PR opened| Babysitting[Babysitting<br/>main agent: /ce-babysit-pr watch]
+    Babysitting -->|CI/review feedback| Shipping
     Babysitting -->|human decision| Pause([pause])
     Babysitting -->|merge-ready| Compounding[Compounding<br/>main agent: /ce-compound]
     Compounding -->|learning persisted| Complete([Complete<br/>release MoA])
