@@ -1,14 +1,16 @@
 /**
- * agentic-compound-engineering — fixed-model delegation dispatcher (R5,R6-R8,R10-R12,R14,R15)
+ * agentic-compound-engineering — per-spawn random-model delegation dispatcher (R5,R6-R8,R10-R12,R15)
  *
  * Uses the typed pi-subagents delegation v1 request/response events. For each
  * child run:
- *   1. Resolve an available catalog model (one per child, persisted before launch).
+ *   1. Resolve an available catalog model with a FRESH random pick per spawn
+ *      (every dispatch independently selects — no resume/reuse preference).
  *   2. Emit a SubagentDelegationRequest on the shared `pi.events` bus.
  *   3. Await the correlated SubagentDelegationResponse (by requestId).
  *   4. Persist the full result as a file-only artifact; return concise metadata.
- *   5. Backpressure: "unavailable_context" keeps the request queued with the
- *      SAME model (R14) and retries when a slot frees.
+ *   5. Backpressure: "unavailable_context" keeps the request queued and retries
+ *      when a slot frees (the backpressure retry is itself a fresh spawn, so it
+ *      re-picks randomly like any other dispatch).
  *
  * Children never inherit per-turn MoA routing: they are launched with an
  * explicit `model` and the MoA extension suppresses routing in child
@@ -122,15 +124,17 @@ function statusToChild(s: SubagentDelegationStatus): ChildStatus {
 	}
 }
 
-/** Choose an available catalog model for a child (persisted once, per R14). */
+/**
+ * Choose an available catalog model for a child with a fresh random pick.
+ * Every spawn independently selects — there is no resume/reuse preference.
+ */
 export function selectModelFor(
 	registry: RegistryLike,
 	warn: (k: string) => void,
-	prefer?: ModelRef,
 	rng: () => number = makeRng(Date.now() >>> 0),
 ): CatalogModel | undefined {
 	const available = resolveAvailable({ modelRegistry: registry }, warn);
-	return pickModel(available, rng, prefer);
+	return pickModel(available, rng);
 }
 
 /**
@@ -172,7 +176,7 @@ export function dispatchChild(
 	const { events, registry, state, warn } = deps;
 	const rng =
 		input.rng ?? makeRng((Date.now() ^ (reqCounter * 2654435761)) >>> 0);
-	const model = selectModelFor(registry, warn, input.prefer, rng);
+	const model = selectModelFor(registry, warn, rng);
 
 	if (!model) {
 		return Promise.resolve({
@@ -210,7 +214,9 @@ export function dispatchChild(
 		writeScope: input.writeScope,
 	});
 
-	// Persist assignment BEFORE launch so resume/steer keep the same model (R14).
+	// Persist the model assignment BEFORE launch for audit/visibility; the
+	// chosen model is a fresh random pick for this spawn and is NOT reused on
+	// resume (every dispatch re-selects randomly).
 	upsertChild(deps.state, children.before);
 	deps.warn; // keep warn referenced for tests
 

@@ -54,10 +54,11 @@ Brainstorming → Planning → PlanReview → Implementing ⇄ Verifying
 - **Compounding** — main agent runs `/ce-compound`; extension records the learning
   artifact, marks Complete, and releases the MoA suspension token.
 
-## Child model catalog (R15)
+## Child model catalog
 
-One model chosen per child run and persisted before launch (never re-randomized on
-resume — preserves provider-side cache locality):
+Every sub-agent spawn independently selects one random model from the available
+catalog (a fresh uniform pick each dispatch — no model is persisted/reused across
+spawns or resumes):
 
 | Provider | Model |
 |----------|-------|

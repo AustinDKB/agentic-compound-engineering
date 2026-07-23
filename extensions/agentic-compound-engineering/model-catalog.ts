@@ -95,24 +95,20 @@ export function makeRng(seed: number): () => number {
 }
 
 /**
- * Choose one available catalog entry. Accepts a seeded rng for deterministic
- * distribution in tests. Returns `undefined` only if no entries are available.
+ * Choose one available catalog entry with a fresh random pick. Accepts a
+ * seeded rng for deterministic distribution in tests. Returns `undefined`
+ * only if no entries are available.
  *
- * If `prefer` is provided (a previously assigned model, for resume), and it
- * still resolves in the available set, return it unchanged (R14 cache reuse).
+ * Each spawn independently selects a random model from the available catalog —
+ * there is no resume/reuse preference and no persistence of a chosen model for
+ * later reuse. (Provider cache locality is intentionally NOT optimized here;
+ * the goal is to exercise the whole multi-provider pool across spawns.)
  */
 export function pickModel(
 	available: readonly CatalogModel[],
 	rng: () => number,
-	prefer?: ModelRef,
 ): CatalogModel | undefined {
 	if (available.length === 0) return undefined;
-	if (prefer) {
-		const hit = available.find(
-			(m) => m.provider === prefer.provider && m.id === prefer.id,
-		);
-		if (hit) return hit;
-	}
 	const idx = Math.floor(rng() * available.length);
 	return available[idx];
 }

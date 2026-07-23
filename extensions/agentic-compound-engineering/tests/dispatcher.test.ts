@@ -1,6 +1,6 @@
 /**
  * U4 — dispatcher: fixed-model delegation, backpressure, writer overlap,
- * artifact isolation, cache reuse (R5,R10,R11,R12,R14,R15).
+ * artifact isolation, per-spawn random model (R5,R10,R11,R12,R15).
  */
 import { test, eq, assert, StubEvents, StubModelRegistry } from "./harness.ts";
 import {
@@ -81,7 +81,7 @@ await test("happy path: dispatch selects one catalog model and persists it befor
 			skill: "ce-brainstorm",
 		} as never,
 	);
-	// Before response: child record persisted with model (R14).
+	// Before response: child record persisted with its freshly-picked model.
 	const queued = st.children.at(-1);
 	assert(queued, "child persisted before response");
 	assert(
@@ -240,31 +240,16 @@ await test("writer overlap blocks dispatch (failed outcome, not launched)", asyn
 	);
 });
 
-await test("model cache reuse: prefer keeps the assignment (R14)", () => {
+await test("selectModelFor picks a fresh random model per spawn (no prefer/reuse)", () => {
 	const reg = makeRegistry();
-	const warned: string[] = [];
 	const seen = new Set<string>();
-	const m1 = selectModelFor(
-		reg as unknown as never,
-		(k) => warned.push(k),
-		{ provider: "openai-codex", id: "gpt-5.4-mini" },
-		makeRng(1),
-	);
-	eq(
-		`${m1!.provider}/${m1!.id}`,
-		"openai-codex/gpt-5.4-mini",
-		"prefer honored when available",
-	);
-	const m2 = selectModelFor(
-		reg as unknown as never,
-		() => {},
-		undefined,
-		makeRng(2),
-	);
-	assert(
-		CATALOG.some((m) => m.id === m2!.id),
-		"no prefer picks a catalog model",
-	);
+	for (let i = 0; i < 40; i++) {
+		const m = selectModelFor(reg as unknown as never, () => {}, makeRng(i + 1))!;
+		assert(CATALOG.some((c) => c.id === m.id), "picked a catalog model");
+		seen.add(m.id);
+	}
+	// 40 independent spawns from a 5-model pool must hit more than one model.
+	assert(seen.size > 1, `saw ${seen.size} distinct models across 40 spawns (expected >1)`);
 });
 
 await test("child isolation: request carries an explicit model string (no per-turn routing)", async () => {

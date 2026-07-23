@@ -112,27 +112,23 @@ await test("pickModel distribution exercises every eligible entry (seeded)", () 
 	for (const [, n] of counts) assert(n > 0, "non-zero count");
 });
 
-await test("pickModel never re-randomizes on resume when prefer resolves (R14 cache reuse)", () => {
+await test("pickModel signatures don't accept a prefer arg (every spawn is a fresh random pick)", () => {
+	// TS enforces this (no `prefer` param); at runtime, verify two independent
+	// spawns from different seeds can pick different models.
 	const avail = CATALOG.slice();
-	const rng = makeRng(7);
-	const first = pickModel(avail, rng)!;
-	// Resume with the same model: must return identical assignment.
-	const resumed = pickModel(avail, makeRng(999), first)!;
-	eq(
-		`${resumed.provider}/${resumed.id}`,
-		`${first.provider}/${first.id}`,
-		"resume keeps model",
-	);
+	const a = pickModel(avail, makeRng(7))!;
+	const b = pickModel(avail, makeRng(999))!;
+	assert(avail.some((m) => m.id === a.id), "a is a catalog model");
+	assert(avail.some((m) => m.id === b.id), "b is a catalog model");
 });
 
-await test("pickModel falls through to rng when prefer no longer available", () => {
-	const avail = CATALOG.slice(0, 2); // glm-5.2, deepseek-v4-pro
-	const gone = { provider: "opencode-go", id: "kimi-k3" };
-	const pick = pickModel(avail, makeRng(3), gone)!;
-	assert(
-		avail.some((m) => m.id === pick.id),
-		"fell through to an available model",
-	);
+await test("successive spawns exercise multiple models (not a one-time pick)", () => {
+	const avail = CATALOG.slice();
+	const rng = makeRng(4242);
+	const seen = new Set<string>();
+	for (let i = 0; i < 60; i++) seen.add(pickModel(avail, rng)!.id);
+	// Across 60 independent spawns from a 5-model pool, more than one model must be picked.
+	assert(seen.size > 1, `saw ${seen.size} distinct models (expected >1)`);
 });
 
 console.log("model-catalog: ok");

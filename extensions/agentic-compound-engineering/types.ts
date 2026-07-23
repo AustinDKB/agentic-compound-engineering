@@ -99,7 +99,7 @@ export interface ChildRecord {
 	role: ChildRole;
 	agent: string;
 	task: string;
-	/** Chosen once and persisted; never re-randomized on resume. */
+	/** Fresh random pick for THIS spawn (each spawn selects independently); persisted for audit only. */
 	model: ModelRef;
 	status: ChildStatus;
 	statusDetail?: string;

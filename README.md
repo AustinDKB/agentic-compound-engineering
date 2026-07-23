@@ -98,7 +98,7 @@ To install manually instead, see `install.sh` — each step is a standalone `cp`
 
 ## Child model catalog
 
-One model is chosen per child run and **persisted before launch** (never re-randomized on resume — preserves provider-side cache locality):
+Every sub-agent spawn independently selects **one random model** from the available catalog (a fresh uniform pick each dispatch — no model is persisted and reused across spawns/resumes):
 
 | Provider | Model | Used for |
 |----------|-------|----------|
