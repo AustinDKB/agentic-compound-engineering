@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/* Tell Tailwind which files to scan for class names */
+@source "../wireframe.html";
+
+/* ---- Global font ---- */
+@layer base {
+  html,
+  body,
+  input,
+  button,
+  textarea,
+  select {
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+}
+
+/* ---- Chat message type colors (4 types) ---- */
+@layer components {
+  /* User messages — slate-400 */
+  .msg-user {
+    @apply bg-slate-400 text-slate-900;
+  }
+  /* Tool calls — slate-700 */
+  .msg-tool {
+    @apply bg-slate-700 text-slate-100;
+  }
+  /* Thinking — slate-600 */
+  .msg-thinking {
+    @apply bg-slate-600 text-slate-100;
+  }
+  /* Response — violet-700 */
+  .msg-response {
+    @apply bg-violet-700 text-violet-50;
+  }
+}
+
+/* ---- Repeated layout / component patterns ---- */
+@layer components {
+  /* Column outer wrapper (width set inline per column) */
+  .col {
+    @apply h-full box-border p-[0.5%];
+  }
+
+  /* Column inner panel (gap / justify set inline where they differ) */
+  .panel {
+    @apply h-full w-full border border-gray-400 rounded-lg box-border p-3 flex flex-col overflow-hidden;
+  }
+
+  /* Column heading */
+  .col-title {
+    @apply border-b border-gray-400 pb-1 font-semibold text-gray-800 shrink-0;
+  }
+
+  /* Header stat lines */
+  .stat {
+    @apply text-xs text-gray-700;
+  }
+  .stat-label {
+    @apply font-semibold text-gray-800;
+  }
+
+  /* To-do item — flows in columns of 4 */
+  .todo-item {
+    @apply flex items-center gap-1 text-xs text-gray-700;
+    flex: 0 0 25%;
+  }
+
+  /* Phase step box */
+  .step {
+    @apply border border-gray-400 rounded-md box-border p-2 flex items-start gap-1;
+  }
+  .step-title {
+    @apply text-sm font-semibold text-gray-800;
+  }
+  .step-desc {
+    @apply text-xs text-gray-500;
+  }
+
+  /* Middle-column chat bubble (color + self-alignment set inline) */
+  .bubble {
+    @apply w-[80%] border border-gray-400 rounded-lg box-border p-3;
+  }
+  .bubble-label {
+    @apply text-xs font-semibold opacity-80 mb-1;
+  }
+  .bubble-text {
+    @apply text-sm;
+  }
+
+  /* Sub-agent box */
+  .agent-box {
+    @apply cursor-pointer border border-gray-400 rounded-md box-border overflow-hidden shrink-0;
+  }
+  .agent-title {
+    @apply border-b border-gray-400 box-border px-2 py-1 font-semibold text-gray-700;
+  }
+  .agent-body {
+    @apply box-border p-2 flex flex-col gap-2;
+  }
+  .agent-message {
+    @apply border border-gray-400 rounded box-border px-2 py-1 text-gray-700;
+  }
+
+  /* Sub-agent log blocks (pair with .msg-tool / .msg-thinking for color) */
+  .log-block {
+    @apply border border-gray-400 rounded box-border px-2 py-1;
+  }
+  .log-text {
+    @apply text-gray-600;
+  }
+}

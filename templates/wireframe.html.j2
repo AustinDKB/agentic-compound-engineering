@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wireframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="output.css">
+</head>
+<body class="h-screen w-screen overflow-hidden box-border p-[1%] bg-white text-gray-900">
+
+  <!-- Page: full viewport, no scrolling -->
+  <div class="flex h-full w-full flex-col">
+
+    <!-- Header: 10% height -->
+    <header class="w-full box-border p-[0.5%]" style="height: 10%;">
+      <div class="h-full w-full border border-gray-400 rounded-lg box-border px-3 py-2 flex items-stretch gap-4 overflow-hidden">
+
+        <!-- Main Agent stats -->
+        <div class="flex flex-col justify-center gap-1 shrink-0 pr-4 border-r border-gray-400">
+          {% for stat in stats %}
+          <div class="stat"><span class="stat-label">{{ stat.label }}:</span> {{ stat.value }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- To-Do list: flows in columns of 4 -->
+        <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <div class="text-xs font-semibold text-gray-800 mb-1 shrink-0">To-Do</div>
+          <div class="flex-1 flex flex-col flex-wrap content-start gap-x-8 overflow-hidden">
+            {% for todo in todos %}
+            <div class="todo-item"><input type="checkbox" class="shrink-0"> {{ todo }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Body: remaining 90% -->
+    <div class="flex w-full" style="height: 90%;">
+
+      <!-- Left column: Phase -->
+      <div class="col" style="width: 14%;">
+        <div class="panel justify-start gap-2">
+
+          <div class="col-title mb-1">Phase</div>
+
+          {% for step in steps %}
+          <!-- Step {{ loop.index }} -->
+          <div class="step">
+            <input type="checkbox" class="mt-0.5 shrink-0">
+            <div>
+              <div class="step-title">Step {{ loop.index }}: {{ step.name }}</div>
+              <div class="step-desc">{{ step.desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+
+      <!-- Middle column: Main Agent -->
+      <div class="col" style="width: 43%;">
+        <div class="panel gap-3">
+
+          <div class="col-title">Main Agent</div>
+
+          <!-- Conversation -->
+          <div class="flex-1 flex flex-col gap-3 overflow-auto">
+            {% for msg in messages %}
+            <div class="{{ msg.cls }} bubble {{ msg.align }}{% if msg.dashed %} border-dashed{% endif %}">
+              <div class="bubble-label">{{ msg.label }}</div>
+              <div class="bubble-text{% if msg.italic %} italic{% endif %}">{{ msg.text }}</div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Input row -->
+          <div class="flex items-stretch gap-2 shrink-0">
+            <input type="text" placeholder="Type a message..."
+                   class="flex-1 border border-gray-400 rounded-md box-border px-3 py-2 text-sm">
+            <button type="button"
+                    class="border border-gray-400 rounded-md box-border px-4 py-2 text-sm font-semibold text-gray-800">Submit</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right column: Sub-Agent Output -->
+      <div class="col" style="width: 43%;">
+        <div class="panel gap-3">
+
+          <div class="col-title">Sub-Agent Output</div>
+
+          <!-- Sub-agent output boxes (variable height) -->
+          <div class="flex-1 flex flex-col gap-2 overflow-auto" style="font-size: 12px;">
+            {% for agent in sub_agents %}
+            <!-- Box {{ loop.index }} -->
+            <div class="agent-box">
+              <div class="agent-title">{{ agent.name }}</div>
+              <div class="agent-body">
+                {% for block in agent.blocks %}
+                {% if block.type == 'thinking' %}
+                <div class="msg-thinking log-block border-dashed italic">Thinking: {{ block.text }}</div>
+                {% elif block.type == 'tool' %}
+                <div class="msg-tool log-block">Tool call: {{ block.text }}</div>
+                {% else %}
+                <div class="log-text">{{ block.text }}</div>
+                {% endif %}
+                {% endfor %}
+                <input type="text" placeholder="Message this agent..." class="agent-message hidden">
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Click a sub-agent box to reveal its message input (accordion: only one open).
+    document.querySelectorAll('.agent-box').forEach(function (box) {
+      box.addEventListener('click', function (e) {
+        if (e.target.tagName === 'INPUT') return; // don't toggle when typing
+        var input = box.querySelector('.agent-message');
+        var willShow = input.classList.contains('hidden');
+        document.querySelectorAll('.agent-message').forEach(function (i) { i.classList.add('hidden'); });
+        if (willShow) {
+          input.classList.remove('hidden');
+          input.focus();
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

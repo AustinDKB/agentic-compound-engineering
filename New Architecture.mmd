@@ -1,0 +1,172 @@
+---
+config:
+  layout: elk
+  theme: default
+---
+flowchart TD
+    USER(["🧑 User\n/de-run 'task description'"])
+
+    subgraph RUN["de-run — Autonomous Orchestrator  ·  main agent gpt-5.6-sol"]
+        RUN_PIN["pi.setModel gpt-5.6-sol\nno per-turn model routing\nmax 3 concurrent children"]
+        RUN_GATE["CRITICAL: Execute IN ORDER\nde_advance validates transitions\nstale-generation continuations ignored"]
+        RUN_TEARDOWN["finally: dispose children\nrelease lock · terminal checkpoint\n(runs on EVERY exit path)"]
+        RUN_PIN --> RUN_GATE
+        RUN_GATE -->|"Step 1 → Stage 5"| RUN_TEARDOWN
+    end
+
+    subgraph STAGE0["Stage 0 · de-scope"]
+        direction LR
+        SC1["Read $ARGUMENTS"]
+        SC_SUB["Scope subagent\nfresh createAgentSession\ninMemory · catalog model\nreads: flow/structure\nlens: classify 5 tags · multi-tag"]
+        SC2{"Classify\n(scope subagent)"}
+        SC3["pipeline-new"]
+        SC4["pipeline-modify"]
+        SC5["crm-integration"]
+        SC6["schema-change"]
+        SC7["debug"]
+        SC_ASK["ask_user\nctx.ui.select\nif tie / none match"]
+        SC_OUT["Write BOTH:\n.artifacts/scope/date-scope.md\nAND pi.appendEntry + tool result\nde-run:scope {tags,paths,assumptions}"]
+        SC1 --> SC_SUB --> SC2
+        SC2 -->|"pipeline-new"| SC3
+        SC2 -->|"pipeline-modify"| SC4
+        SC2 -->|"crm-integration"| SC5
+        SC2 -->|"schema-change"| SC6
+        SC2 -->|"debug"| SC7
+        SC2 -->|"tie / none"| SC_ASK --> SC2
+        SC3 & SC4 & SC5 & SC6 & SC7 --> SC_OUT
+    end
+
+    subgraph STAGE1["Stage 1 · de-research  ·  background async"]
+        direction TB
+        R_IN["Read scope JSON index\n{tags, paths, assumptions}"]
+
+        subgraph R_PARALLEL["Scouts  ·  fresh createAgentSession × N  ·  allSettled · pool≤3  ·  read-only"]
+            direction LR
+            RA["Baseline: prior-art scout\nscan docs/solutions/"]
+            RB["Baseline: repo/flow scout\nscan Prefect flows + tasks"]
+            RC["Tag extra: schema scout\nPostgres + Alembic\nif schema-change"]
+            RD["Tag extra: CRM scout\nCRM client + API\nif crm-integration"]
+            RE["Tag extra: pipeline scout\nreuse points\nif pipeline-*"]
+            RF["Tag extra: debug scout\nerror sites + logs\nif debug"]
+        end
+
+        R_RETRY["Failed scout → retry ONCE\nfresh dispatch\n2nd fail → BLOCK → user"]
+        R_COLLECT["All scouts settle (await prompt)\ncollect inline final results\nthinking discarded · dispose in finally"]
+        R_VERIFY["Plan agent\nfresh session · read-only\nverify absence claims\neach needs file:line evidence"]
+        R_BLOCK{"Unverifiable\nabsence claim?"}
+        R_STOP1["STOP\nsurface to user\nblock before planning"]
+        R_OUT["Write\n.artifacts/research/date-topic-research.md\nfile:line · verified · assumptions labeled\ndossier INLINED to main agent"]
+        R_IN --> R_PARALLEL
+        RA & RB & RC & RD & RE & RF --> R_RETRY --> R_COLLECT
+        R_COLLECT --> R_VERIFY --> R_BLOCK
+        R_BLOCK -->|"yes"| R_STOP1
+        R_BLOCK -->|"no"| R_OUT
+    end
+
+    subgraph STAGE2["Stage 2 · de-plan"]
+        direction TB
+        PL_DRAFT["1 · Main agent drafts initial plan\nrun checklist → sequence U-IDs"]
+        subgraph PL_LENSES["2 · Lens reviewers  ·  fresh sessions × 4  ·  allSettled · pool≤3"]
+            direction LR
+            L1["pipeline lens"]
+            L2["schema lens"]
+            L3["crm lens"]
+            L4["idempotency lens"]
+        end
+        PL_ASK["3 · ask_user  ctx.ui.select\nwhich findings to apply to primary plan"]
+        PL_APPLY["4 · Main agent applies chosen findings"]
+        PL_LAVISH["5 · Render plan via Lavish\npi.sendMessage handoff"]
+        PL_NITPICK["6 · Human interacts with Lavish plan\nnitpick before execution\nresume on acceptance"]
+        PL_OUT["Write BOTH:\n.artifacts/plan/topic-plan.md\nAND pi.appendEntry de-run:plan {uIds, planHash}\nU-ID = gate + rollback + ownerScout + risks\n+ writeScope[] (REQUIRED)\nNO explicit dependency-edge field"]
+        PL_DRAFT --> PL_LENSES --> PL_ASK --> PL_APPLY --> PL_LAVISH --> PL_NITPICK --> PL_OUT
+    end
+
+    subgraph STAGE3["Stage 3 · de-execute"]
+        direction TB
+        EX_IN["Read plan · Load U-IDs + writeScope"]
+        EX_DAG["Infer dependency DAG\nfrom writeScope overlap\n+ main agent stated order\noverlapping scopes never co-run"]
+        EX_LOOP{"Launch ready U-IDs\nup to 3 concurrent"}
+        EX_WORK["Executor children implement\nfresh session · write tools\nONE U-ID each · NO git commands\nshared working tree"]
+        EX_SCOPE{"git status:\nwrote outside writeScope?"}
+        EX_REVERT["Revert offending paths\ngit checkout -- paths\n→ gate FAIL"]
+        EX_GATE{"Main agent judges gate\nreads diff + gate criteria\nno verifier child"}
+        EX_COMMIT["Main agent commits\ngit add writeScope\natomic per U-ID · local only"]
+        EX_RETRY{"Retry unit ONCE\nfresh child · re-picked model"}
+        EX_STOP["STOP\nin-flight siblings finish\nno new units · later U-IDs untouched"]
+        EX_OUT["Write\n.artifacts/execute/date-topic-execute.md\nmodel · verdict · retries · SHA · violations"]
+        EX_IN --> EX_DAG --> EX_LOOP --> EX_WORK --> EX_SCOPE
+        EX_SCOPE -->|"yes"| EX_REVERT --> EX_RETRY
+        EX_SCOPE -->|"no"| EX_GATE
+        EX_GATE -->|"fail"| EX_RETRY
+        EX_RETRY -->|"retry"| EX_WORK
+        EX_RETRY -->|"fail again"| EX_STOP
+        EX_GATE -->|"pass"| EX_COMMIT --> EX_LOOP
+        EX_LOOP -->|"all done"| EX_OUT
+    end
+
+    subgraph STAGE4["Stage 4 · de-review"]
+        direction TB
+        REV_IN["Read diff · local Stage-3 commits"]
+
+        subgraph REV_DISPATCH["4 reviewers  ·  fresh sessions × 4  ·  pool≤3  ·  read-only\nmodels PINNED for the whole loop"]
+            direction LR
+            RV1["pipeline-reviewer\ncatalog model\nclass lens\nchecks: stateless · retry · overlap"]
+            RV2["schema-reviewer\ncatalog model\nschema lens\nchecks: downgrade() · NOT NULL · indexes · ON DELETE"]
+            RV3["crm-reviewer\ncatalog model\ncrm lens\nchecks: rate-limit · pagination · idempotent writes"]
+            RV4["idempotency-reviewer\ncatalog model\nidempotency lens\nchecks: dedup · upsert · watermark · half-run"]
+        end
+
+        REV_COLLECT["Collect inline JSON findings arrays\nfrom each reviewer  ·  thinking discarded"]
+        REV_SYNTH["Cluster by location (file + ±5 lines)\nEscalate FIRST: 2+ personas → +1 tier\nTHEN dedup\nP0=block · P1-P2=human · P3=advisory"]
+        REV_GATE{"P0\nfindings?"}
+        REV_FIX["Main agent edits directly\nno executor child\nre-dispatch same 4 reviewers\nMAX 3 ROUNDS"]
+        REV_STOP["STOP after round 3\nsurface surviving P0s\nDo not ship · do not compound"]
+        REV_CLEAN["P0-clean"]
+        REV_OUT["Write\n.artifacts/review/date-review.md"]
+        REV_IN --> REV_DISPATCH
+        RV1 & RV2 & RV3 & RV4 --> REV_COLLECT
+        REV_COLLECT --> REV_SYNTH --> REV_GATE
+        REV_GATE -->|"yes · rounds 1-3"| REV_FIX --> REV_DISPATCH
+        REV_FIX -->|"round 3 done, P0s remain"| REV_STOP
+        REV_GATE -->|"no"| REV_CLEAN --> REV_OUT
+        REV_STOP -.->|"round 3 exhausted"| USER
+    end
+
+    subgraph STAGE_SHIP["Lightweight Shipping  ·  post-review"]
+        direction LR
+        SH["/ce-commit-push-pr\nreused skill\nfires only when P0-clean"]
+        SH -->|"push + PR"| PR(["PR opened\nreviewed code only"])
+    end
+
+    subgraph STAGE5["Stage 5 · de-compound"]
+        direction LR
+        CP_IN["Read execute log\n+ review report"]
+        CP_TRIG{"Failure\nor notable win?"}
+        CP_SOL["Write\ndocs/solutions/<category>/<topic>.md\nbugs · migrations · integrations · patterns\nSymptoms · Root cause · Fix · Prevention"]
+        CP_SKIP["No compound entry\n(uneventful success)"]
+        CP_DONE["DONE gate:\nsolutions doc written → teardown"]
+        CP_IN --> CP_TRIG
+        CP_TRIG -->|"yes"| CP_SOL --> CP_DONE
+        CP_TRIG -->|"no"| CP_SKIP --> CP_DONE
+    end
+
+    DONE(["✓ Done\nArtifact chain complete\nPR may still be open\nno babysit stage"])
+
+    USER --> RUN_PIN
+    RUN_GATE -->|"Step 1"| STAGE0
+    STAGE0 -->|"scope JSON index"| RUN_GATE
+    RUN_GATE -->|"Step 2"| STAGE1
+    STAGE1 -->|"research dossier path"| R_STOP1
+    R_STOP1 -.->|"surface"| USER
+    RUN_GATE -->|"Step 3"| STAGE2
+    STAGE2 -->|"plan path"| RUN_GATE
+    RUN_GATE -->|"Step 4"| STAGE3
+    EX_STOP -.->|"surface"| USER
+    STAGE3 -->|"execute log path"| RUN_GATE
+    RUN_GATE -->|"Step 5"| STAGE4
+    REV_STOP -.->|"surface"| USER
+    STAGE4 -->|"P0-clean"| STAGE_SHIP
+    STAGE_SHIP -->|"review report path"| RUN_GATE
+    RUN_GATE -->|"Step 6"| STAGE5
+    STAGE5 -->|DONE gate| RUN_TEARDOWN
+    RUN_TEARDOWN --> DONE

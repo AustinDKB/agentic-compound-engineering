@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "typeRoots": ["/home/austin/.bun/install/global/node_modules/@types"],
+    "baseUrl": ".",
+    "paths": {
+      "@earendil-works/pi-coding-agent": ["/home/austin/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"],
+      "@earendil-works/pi-ai": ["/home/austin/.bun/install/global/node_modules/@earendil-works/pi-ai/dist/index.d.ts"],
+      "@earendil-works/pi-tui": ["/home/austin/.bun/install/global/node_modules/@earendil-works/pi-tui/dist/index.d.ts"],
+      "typebox": ["/home/austin/.bun/install/global/node_modules/typebox/build/index.d.mts"]
+    }
+  },
+  "include": ["*.ts", "tests/*.ts"]
+}
