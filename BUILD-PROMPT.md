@@ -1,7 +1,24 @@
-# Build de-run — one-shot implementation prompt
+# Build de-run — standing brief
 
-> Paste everything below the line into pi running `opencode-go/glm-5.2`, started
-> from this repository's root.
+> **This is the shared context every build session needs.** The six phase prompts
+> in [`build-prompts/`](build-prompts/) each open by telling the model to read
+> this file first, then hand it one phase's scope.
+>
+> - **Six sessions (recommended):** paste `build-prompts/phase-N-*.md` into a
+>   fresh pi session, one phase at a time. Each phase has its own exit gate and
+>   ends by telling the model to stop.
+> - **One session:** paste everything below the line and let it run all 31 issues.
+>   Ambitious for GLM-5.2; the build order below is designed so a partial run is
+>   still useful.
+
+| Phase | Prompt | Issues | Milestones |
+|---|---|---|---|
+| 1 | `phase-1-bootstrap-spawner.md` | #1–#8 | M0, M1 |
+| 2 | `phase-2-pipeline-core.md` | #9–#16 | M2 |
+| 3 | `phase-3-execute-review-ship.md` | #17–#23 | M3 |
+| 4 | `phase-4-web-server-main-bridge.md` | #24–#26 | M4 |
+| 5 | `phase-5-child-panes.md` | #27–#28 | M5 |
+| 6 | `phase-6-gates-tui-host.md` | #29–#31 | M6 |
 
 ---
 
